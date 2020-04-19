@@ -9,37 +9,36 @@
 #import modules
 #---------------------------------------------
 import pandas as pd
+import numpy as np
 
 #---------------------------------------------
 #function to compute the influence of each channel
 #---------------------------------------------
-def prob_mod(data,user_conv):
+def prob_mod(data):
 
     """
     input
-        data: input dataframe that two columns:
-            user_id, medium (ie. channel, line item)
-        user_conv: dictionary. keys are the medium and their values
-            if there is a conversion 1 or not 0
+        data: input dataframe with three columns:
+            user_id, medium (ie. channel, line item), conversion or not of each user
 
     output
-        conv: dictionary. keys are user_id and values are 1 if conversion
-        or 0 if non conversion
+        medium_contribution: dataframe with two columns:
+            medium, contribution
     """
-    #probabilistic model 
     medium_unique = pd.Series.unique(data.iloc[:,1])
+    n_medium = len(medium_unique)
 
-    #initializes the dictionaries that contains the number of positive (conversion)
-    #and negative (non conversion) times a medium appears in customer journeys
-    medium_p = {}
-    medium_n = {}
-    medium_p_aux = {}
-    medium_n_aux = {}
+    medium_map = {}
+    j = 0
     for i in medium_unique:
-        medium_p[i] = 0
-        medium_n[i] = 0
-        medium_p_aux[i] = 0
-        medium_n_aux[i] = 0
+        medium_map[i] = j
+        j += 1
+
+    #numpy arrays to store the number of times of appereance of each channel
+    medium_p = np.zeros((n_medium,n_medium),dtype=np.float_)
+    medium_n = np.zeros((n_medium,n_medium),dtype=np.float_)
+    medium_p_aux = np.zeros(n_medium,dtype=np.float_)
+    medium_n_aux = np.zeros(n_medium,dtype=np.float_)
 
     data_shape = data.shape
     user_id_new = ''
@@ -47,25 +46,29 @@ def prob_mod(data,user_conv):
     for i in range(data_shape[0]):
         user_id_new = data.iloc[i,0] 
         if user_id_new == user_id_old:
-            if user_conv[data.iloc[i,0]] == 1:
-                medium_p_aux[data.iloc[i,1]] = 1
+            if data.iloc[i,2]:
+                medium_p_aux[medium_map[data.iloc[i,1]]] = 1.
             else:
-                medium_p_aux[data.iloc[i,1]] = 1
+                medium_n_aux[medium_map[data.iloc[i,1]]] = 1.
         else:
-            for j in medium_unique:
-                medium_p[j] = medium_p[j]+medium_p_aux[j]
-                medium_n[j] = medium_n[j]+medium_n_aux[j]
-                medium_p_aux[j] = 0
-                medium_n_aux[j] = 0
-
+            medium_p += medium_p_aux
+            medium_n += medium_n_aux
+            medium_p_aux[:] = 0.
+            medium_n_aux[:] = 0.
+            if data.iloc[i,2]:
+                medium_p_aux[medium_map[data.iloc[i,1]]] = 1.
+            else:
+                medium_n_aux[medium_map[data.iloc[i,1]]] = 1.
             user_id_old = user_id_new
-    for i in medium_unique:
-        medium_p[i] = medium_p[i]+medium_p_aux[i]
-        medium_n[i] = medium_n[i]+medium_n_aux[i]
 
+    medium_p = medium_p/(medium_p+medium_n)
+    medium_p_diag_sum = np.sum(np.diag(medium_p))
+    d = {'medium':medium_unique,'contribution':np.zeros(n_medium,dtype=np.float_)}
+    medium_contribution = pd.DataFrame(data=d)
+    for i in range(n_medium):
+        medium_contribution.iloc[i,1] =  medium_p[i,i]+(np.sum(medium_p[i,:])-medium_p_diag_sum-(n_medium-1)*medium_p[i,i])/(2.*(n_medium-1))
     
-
-    return(medium_p, medium_n)
+    return(medium_contribution)
 
 
 #---------------------------------------------

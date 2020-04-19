@@ -8,47 +8,29 @@
 #import modules
 #---------------------------------------------
 import pandas as pd
+import numpy as np
 import probabilistic_model
+import probabilistic_model_v2
+import time
 
 #---------------------------------------------
 #main program
 #---------------------------------------------
-import pandas as pd
 def main():
-    print('hello world')
 
-    filepath1 = r'C:\Users\sesig\Documents\master data science\tfm\Colaboracion_C3_datos\hash_grupo_0.csv'
-    cols1 = ['user_id','action_date','action_type','site_id','creative_id','conversion_action','conversion_id','keyword']
-    cols1_dtype = {'user_id':'str','action_type':'str','site_id':'str','creative_id':'str','conversion_action':'str','conversion_id':'str','keyword':'str'}
-    file1 = pd.read_csv(filepath1,sep=',',usecols=cols1,nrows=5000,dtype=cols1_dtype)
-    print(file1.loc[0,['action_date','user_id']])
-    print('---------------')
-    print(file1.loc[0,cols1])
-    print('---------------')
+    start_time = time.time()
 
-    file1['conversion'] = 0
-    file1_shape = file1.shape
+    filepath = r'C:\Users\sesig\Documents\master data science\tfm\criteo_attribution_dataset\criteo_attribution_dataset.tsv.gz'
+    df = pd.read_csv(filepath, usecols=['timestamp','uid','campaign','conversion'], sep='\t', compression='gzip',nrows=5000)
+    #df = pd.read_csv(filepath, sep='\t', compression='gzip')
+    #pd.DataFrame.to_csv(df,r'C:\Users\sesig\Documents\master data science\tfm\criteo_attribution_dataset\criteo.csv',sep=',',index=False)
 
-    for i in range(file1_shape[0]):
-        if file1.loc[i,'action_type'] == 'conversion':
-            file1.loc[i,'conversion'] = 1
-
-    user_conv = probabilistic_model.user_conversion(file1.loc[:,['user_id','conversion']])
-
-    file1 = pd.DataFrame.rename(file1,mapper={'site_id':'medium'},axis=1)
-
-    print('---------------')
-    print(file1.loc[0,:])
-    print('---------------')
-
-    medium_p, medium_n = probabilistic_model.prob_mod(file1.loc[:,['user_id','medium']],user_conv)
-
-    print('---------------')
-    print(medium_p['1233_171_'])
-    print(medium_n['1233_171_'])
-    print('---------------')
-
-    print(user_conv['695cccad7341f61dffaedaf66b61046633030c25'])
+    probmod = probabilistic_model_v2.prob_mod(df.loc[:,['uid','campaign','conversion']])
+    # print(probmod.iloc[1:10,:])
+    # print(np.sum(probmod.iloc[:,1]))
+    filepath_probmod = r'C:\Users\sesig\Documents\master data science\tfm\criteo_output_data\probabilistic_model.csv'
+    pd.DataFrame.to_csv(probmod,path_or_buf=filepath_probmod,sep=',',index=False)
+    print(time.time()-start_time)
 
 
 #only runs the code if executed as main
