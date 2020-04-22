@@ -67,6 +67,8 @@ def prob_mod(data):
     medium_contribution = pd.DataFrame(data=d)
     for i in range(n_medium):
         medium_contribution.iloc[i,1] =  medium_p[i,i]+(np.sum(medium_p[i,:])-medium_p_diag_sum-(n_medium-1)*medium_p[i,i])/(2.*(n_medium-1))
+
+    medium_contribution.iloc[:,1] /= np.sum(medium_contribution.iloc[:,1])
     
     return(medium_contribution)
 
