@@ -30,6 +30,7 @@ def objective_f(w,data):
     user_id_old = ''
     for i in range(data_shape[0]): #for each user
         user_id_new = data.iloc[i,0]
+        
 
 
 
