@@ -115,6 +115,28 @@ def ks_test_exp(x,dist,n_sample):
 
     return(p_value)
 
+def fit_gamma_dist(data):
+    
+    channels = [23644447,16491630,73327,5061834,21016759,9100690,19602309,17710659,30535894,8980571,32368244,14235907]
+
+    j = 0
+    df = pd.DataFrame(columns=['channel', 'p-value', 'shape parameter', 'scale parameter', 'location parameter'])
+    df['channel'] = channels
+    df['p-value'] = 0
+    for i in channels:
+
+        x = channel_ads_interarrival_times(data,i)
+
+        params = stats.gamma.fit(x)
+
+        df.loc[j,'shape parameter'] = params[0]
+        df.loc[j, 'location parameter'] = params[1]
+        df.loc[j, 'scale parameter'] = params[2]
+        j += 1
+
+    path = r'C:\Users\sesig\Documents\master data science\tfm\criteo_cleaned_data\gamma_dist_params.csv'
+    pd.DataFrame.to_csv(df,path_or_buf=path,sep=',',index=False)
+
 def channel_ads_distribution(data,channels):
     channel = pd.read_csv(r'C:\Users\sesig\Documents\master data science\tfm\criteo_cleaned_data\channel_appereances.csv',sep=',',usecols=['campaign'],nrows=50)
     channel_out = pd.DataFrame(columns=['campaign','gamma','exp'])

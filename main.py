@@ -44,7 +44,42 @@ def main(data):
 
     # channel_out.to_csv(r'C:\Users\sesig\Documents\master data science\tfm\criteo_cleaned_data\channel_distribution.csv',sep=',')
 
-    data_processing_rpackage.generate_ad_timestamp(data)
+    # data_processing_rpackage.generate_ad_timestamp(data)
+    
+    channels = [23644447,16491630,73327,5061834,21016759,9100690,19602309,17710659,30535894,8980571,32368244,14235907]
+    
+    # for i in channels:
+
+    #     x = data_processing.channel_ads_interarrival_times(data,i)
+
+    #     plt.hist(x)
+    #     plt.show()
+
+    # plt.figure()
+    # plt.subplot(2,1,1)
+    # plt.hist(data_processing.channel_ads_interarrival_times(data,32368244))
+    # plt.xlabel('Time')
+    # plt.ylabel('Count')
+    # plt.subplot(2,1,2)
+    # plt.hist(data_processing.channel_ads_interarrival_times(data,14235907))
+    # plt.xlabel('Time')
+    # plt.ylabel('Count')
+    # plt.show()
+
+    # fig, ax = plt.subplots(nrows=3, ncols=1, sharex=True, constrained_layout=True)
+    # ax[0].hist(data_processing.channel_ads_interarrival_times(data,32368244), bins=20, range=(0,10))
+    # ax[0].set_xlabel('Time (days)')
+    # ax[0].set_ylabel('Count')
+    # ax[1].hist(data_processing.channel_ads_interarrival_times(data,14235907), bins=20, range=(0,10))
+    # ax[1].set_xlabel('Time (days)')
+    # ax[1].set_ylabel('Count')
+    # ax[2].hist(data_processing.channel_ads_interarrival_times(data,8980571), bins=20, range=(0,10))
+    # ax[2].set_xlabel('Time (days)')
+    # ax[2].set_ylabel('Count')
+    # plt.show()
+
+    data_processing.fit_gamma_dist(data)
+    
 
 
     print(time.time()-start_time)

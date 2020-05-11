@@ -118,6 +118,7 @@ def generate_ad_timestamp(data_criteo):
 
     k = 0
     for i in data_r_unique_users:
+        print(i)
         data_r.loc[k,'timestamp'] = 0
         k += 1
         for j in range(data_r_uid[i]-1):
