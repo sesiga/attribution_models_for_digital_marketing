@@ -137,6 +137,22 @@ def fit_gamma_dist(data):
     path = r'C:\Users\sesig\Documents\master data science\tfm\criteo_cleaned_data\gamma_dist_params.csv'
     pd.DataFrame.to_csv(df,path_or_buf=path,sep=',',index=False)
 
+def plot_interarrival_times(data):
+    fig, ax = plt.subplots(nrows=1, ncols=3, constrained_layout=True)
+    ax[0].hist(channel_ads_interarrival_times(data,5061834), bins=10, range=(0,10), label='5061834')
+    ax[0].set_xlabel('Interarrival time (days)')
+    ax[0].set_ylabel('Number of ads')
+    ax[0].legend(loc='upper rigth')
+    ax[1].hist(channel_ads_interarrival_times(data,9100690), bins=10, range=(0,10), label='9100690')
+    ax[1].set_xlabel('Interarrival time (days)')
+    ax[1].set_ylabel('Number of ads')
+    ax[1].legend(loc='upper rigth')
+    ax[2].hist(channel_ads_interarrival_times(data,32368244), bins=10, range=(0,10), label='32368244')
+    ax[2].set_xlabel('Interarrival time (days)')
+    ax[2].set_ylabel('Number of ads')
+    ax[2].legend(loc='upper rigth')
+    plt.show()
+
 def channel_ads_distribution(data,channels):
     channel = pd.read_csv(r'C:\Users\sesig\Documents\master data science\tfm\criteo_cleaned_data\channel_appereances.csv',sep=',',usecols=['campaign'],nrows=50)
     channel_out = pd.DataFrame(columns=['campaign','gamma','exp'])

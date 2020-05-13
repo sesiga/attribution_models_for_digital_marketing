@@ -1,10 +1,10 @@
+import numpy as np
 import pandas as pd
 
-path_r_data = r'C:\Users\sesig\Documents\master data science\tfm\r_dataset\r_data.csv'
-data = pd.read_csv(filepath_or_buffer=path_r_data, sep=',')
-print(data.head())
-    
-cj_split = str.split(data.iloc[0,0],'>')
+a = np.arange(0,11,1,dtype=np.int_)
+b = np.zeros(12,dtype=np.float_)
 
-for j in cj_split:
-    print(j)
+d = pd.DataFrame(data={'a':np.arange(0,5,1,dtype=np.int_), 0:np.arange(1,6,1,dtype=np.int_), 1:np.arange(2,7,1,dtype=np.int_)})
+print(d.columns)
+ch = np.arange(0,12,1,dtype=np.int_)
+print(d[[0,1]])

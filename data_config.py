@@ -35,6 +35,15 @@ def data_out1(data_conversion, data_non_conversion, user_conversion):
 
     return(print('---data exported succesfully---'))
 
+def data_in_r():
+    path = r'C:\Users\sesig\Documents\master data science\tfm\r_dataset_cleaned\r_dataset_timestamp.csv'
+    data = pd.read_csv(path, sep=',',nrows=1000)
+
+    path_lr = r'C:\Users\sesig\Documents\master data science\tfm\r_dataset_cleaned\data_for_lr.csv'
+    data_lr = pd.read_csv(path_lr,sep=',')
+
+    return data, data_lr
+
 #only runs the code if executed as main
 if __name__== '__main__':
     print('Running this file as the main file does nothing')
