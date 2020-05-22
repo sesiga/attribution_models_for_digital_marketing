@@ -13,6 +13,8 @@ import numpy as np
 from scipy import stats
 import statsmodels.api as sm
 import matplotlib.pyplot as plt
+from matplotlib import rc
+import matplotlib
 
 #----------------------------------
 #load data
@@ -58,6 +60,58 @@ def channel_ads_interarrival_times(data, group):
     x1 = np.array(x['timestamp'].values, dtype=np.float_)
 
     return(x1)
+
+def channel_ads_interarrival_individual_times(data, group):
+    channel = data.groupby(['campaign'],sort=False).get_group(group)
+    channel_uid = channel.groupby(['uid'])
+    x = pd.DataFrame(columns=['time1', 'time2', 'time3'])
+    for name, group in channel_uid:
+        group.sort_values(by=['timestamp'])
+        group_index = group.index
+        original_timestamp_1 = group.loc[group_index[0],'timestamp']
+        if len(group) > 3:
+            time1 = group.loc[group.index[1],'timestamp']-group.loc[group.index[0],'timestamp']
+            time2 = group.loc[group.index[2],'timestamp']-group.loc[group.index[1],'timestamp']
+            time3 = group.loc[group.index[3],'timestamp']-group.loc[group.index[2],'timestamp']
+            x = pd.DataFrame.append(x,{'time1':time1, 'time2':time2, 'time3':time3}, ignore_index=True)
+
+
+    fig, ax = plt.subplots(nrows=1, ncols=3, constrained_layout=True, figsize=(5.9055,3))
+    # fig, ax = plt.subplots(nrows=1, ncols=3, constrained_layout=True, figsize=(10,6))
+    ax[0].hist(x['time1'], bins=8, range=(0,10))
+    ax[0].set_xlabel('Time from $1^{st}$ ad to $2^{nd}$ ad')
+    ax[0].set_ylabel('Number of ads')
+    ax[1].hist(x['time2'], bins=8, range=(0,10))
+    ax[1].set_xlabel('Time from $2^{nd}$ ad to $3^{rd}$ ad')
+    ax[1].set_ylabel('Number of ads')
+    ax[2].hist(x['time3'], bins=8, range=(0,10))
+    ax[2].set_xlabel('Time from $3^{rd}$ ad to $4^{th}$ ad')
+    ax[2].set_ylabel('Number of ads')
+    fig.suptitle('Criteo channel: 32368244')
+    # plt.show()
+    fig.savefig(r"C:\Users\sesig\Documents\master data science\tfm\project\imagenes\interarrival_times_channel_32368244.png", format="png")
+
+def ks_test_gamma_individual_interarrival_times(data, ch):
+    channel = data.groupby(['campaign'],sort=False).get_group(ch)
+    channel_uid = channel.groupby(['uid'])
+    x = pd.DataFrame(columns=['time1', 'time2', 'time3'])
+    for name, group in channel_uid:
+        group.sort_values(by=['timestamp'])
+        group_index = group.index
+        original_timestamp_1 = group.loc[group_index[0],'timestamp']
+        if len(group) > 3:
+            time1 = group.loc[group.index[1],'timestamp']-group.loc[group.index[0],'timestamp']
+            time2 = group.loc[group.index[2],'timestamp']-group.loc[group.index[1],'timestamp']
+            time3 = group.loc[group.index[3],'timestamp']-group.loc[group.index[2],'timestamp']
+            x = pd.DataFrame.append(x,{'time1':time1, 'time2':time2, 'time3':time3}, ignore_index=True)
+
+    y = channel_ads_interarrival_times(data, ch)
+
+    y_gamma_params = stats.gamma.fit(y)
+    print(stats.kstest(x['time1'], stats.gamma.cdf, y_gamma_params))
+    print(stats.kstest(x['time2'], stats.gamma.cdf, y_gamma_params))
+    print(stats.kstest(x['time3'], stats.gamma.cdf, y_gamma_params))
+
 
 def plot_channel_distribution(x):
 
@@ -138,20 +192,21 @@ def fit_gamma_dist(data):
     pd.DataFrame.to_csv(df,path_or_buf=path,sep=',',index=False)
 
 def plot_interarrival_times(data):
-    fig, ax = plt.subplots(nrows=1, ncols=3, constrained_layout=True)
-    ax[0].hist(channel_ads_interarrival_times(data,5061834), bins=10, range=(0,10), label='5061834')
+    fig, ax = plt.subplots(nrows=1, ncols=3, constrained_layout=True, figsize=(5.9055,3))
+    ax[0].hist(channel_ads_interarrival_times(data,5061834), bins=10, range=(0,10))
+    ax[0].set_title('Channel 5061834')
     ax[0].set_xlabel('Interarrival time (days)')
     ax[0].set_ylabel('Number of ads')
-    ax[0].legend(loc='upper rigth')
-    ax[1].hist(channel_ads_interarrival_times(data,9100690), bins=10, range=(0,10), label='9100690')
+    ax[1].hist(channel_ads_interarrival_times(data,9100690), bins=10, range=(0,10))
+    ax[1].set_title('Channel 9100690')
     ax[1].set_xlabel('Interarrival time (days)')
     ax[1].set_ylabel('Number of ads')
-    ax[1].legend(loc='upper rigth')
-    ax[2].hist(channel_ads_interarrival_times(data,32368244), bins=10, range=(0,10), label='32368244')
+    ax[2].hist(channel_ads_interarrival_times(data,32368244), bins=10, range=(0,10))
+    ax[2].set_title('Channel 32368244')
     ax[2].set_xlabel('Interarrival time (days)')
     ax[2].set_ylabel('Number of ads')
-    ax[2].legend(loc='upper rigth')
-    plt.show()
+    # plt.show()
+    fig.savefig(r"C:\Users\sesig\Documents\master data science\tfm\project\imagenes\histogram_ads_time_distribution.png", format="png")
 
 def channel_ads_distribution(data,channels):
     channel = pd.read_csv(r'C:\Users\sesig\Documents\master data science\tfm\criteo_cleaned_data\channel_appereances.csv',sep=',',usecols=['campaign'],nrows=50)
