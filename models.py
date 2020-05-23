@@ -110,7 +110,128 @@ def LastTouchModel(data):
     return(medium_contribution)
 
 #---------------------------------------------
-#last touch model
+#first interaction model
+#---------------------------------------------
+def FirstInteractionModel(data):
+    """
+    input
+        data: input dataframe with three columns:
+            user_id, medium (ie. channel, line item), conversion or not of each user
+
+    output
+        medium_contribution: dataframe with two columns:
+            medium, contribution
+    """
+
+    medium_unique = pd.Series.unique(data.iloc[:,1])
+    n_medium = len(medium_unique)
+    medium_map = {}
+    j = 0
+    for i in medium_unique:
+        medium_map[i] = j
+        j += 1
+
+    d = {'medium':medium_unique,'contribution':np.zeros(n_medium,dtype=np.float_)}
+    medium_contribution = pd.DataFrame(data=d)
+
+    data_grouped = pd.DataFrame.groupby(data, by='uid')
+    for name, group in data_grouped:
+        if group.iloc[0,2] == 1:
+            medium_loc = medium_map[group.iloc[0,1]]
+            medium_contribution.iloc[medium_loc,1] += 1
+    medium_contribution.iloc[:,1] /= np.sum(medium_contribution.iloc[:,1])
+
+    return(medium_contribution)
+
+#---------------------------------------------
+#position based model
+#---------------------------------------------
+def PositionBasedModel(data):
+    """
+    input
+        data: input dataframe with three columns:
+            user_id, medium (ie. channel, line item), conversion or not of each user
+
+    output
+        medium_contribution: dataframe with two columns:
+            medium, contribution
+    """
+
+    medium_unique = pd.Series.unique(data.iloc[:,1])
+    n_medium = len(medium_unique)
+    medium_map = {}
+    medium_aux = {}
+    j = 0
+    for i in medium_unique:
+        medium_map[i] = j
+        medium_aux[i] = 0
+        j += 1
+
+    d = {'medium':medium_unique,'contribution':np.zeros(n_medium,dtype=np.float_)}
+    medium_contribution = pd.DataFrame(data=d)
+
+    data_grouped = pd.DataFrame.groupby(data, by='uid')
+    for name, group in data_grouped:
+        if group.iloc[0,2] == 1:
+            n_ads = group.shape[0]
+            medium_aux[group.iloc[0,1]] += 0.4 
+            medium_aux[group.iloc[n_ads-1,1]] += 0.4 
+            for i in range(1,n_ads-1):
+                medium_aux[group.iloc[i,1]] += 0.2 / ( n_ads - 2 )
+            for i in medium_aux:
+                medium_loc = medium_map[i]
+                medium_contribution.iloc[medium_loc,1] += medium_aux[i]
+                medium_aux[i] = 0
+    medium_contribution.iloc[:,1] /= np.sum(medium_contribution.iloc[:,1])
+
+    return(medium_contribution)
+
+#---------------------------------------------
+#position decay model
+#---------------------------------------------
+def PositionDecayModel(data):
+    """
+    input
+        data: input dataframe with three columns:
+            user_id, medium (ie. channel, line item), conversion or not of each user
+
+    output
+        medium_contribution: dataframe with two columns:
+            medium, contribution
+    """
+
+    medium_unique = pd.Series.unique(data.iloc[:,1])
+    n_medium = len(medium_unique)
+    medium_map = {}
+    medium_aux = {}
+    j = 0
+    for i in medium_unique:
+        medium_map[i] = j
+        medium_aux[i] = 0
+        j += 1
+
+    d = {'medium':medium_unique,'contribution':np.zeros(n_medium,dtype=np.float_)}
+    medium_contribution = pd.DataFrame(data=d)
+
+    data_grouped = pd.DataFrame.groupby(data, by='uid')
+    for name, group in data_grouped:
+        if group.iloc[0,2] == 1:
+            n_ads = group.shape[0]
+            j = 1
+            for i in range(n_ads):
+                j += 1
+            for i in range(n_ads):
+                medium_aux[group.iloc[i,1]] += ( i + 1 ) / ( n_ads * j )
+            for i in medium_aux:
+                medium_loc = medium_map[i]
+                medium_contribution.iloc[medium_loc,1] += medium_aux[i]
+                medium_aux[i] = 0
+    medium_contribution.iloc[:,1] /= np.sum(medium_contribution.iloc[:,1])
+
+    return(medium_contribution)
+
+#---------------------------------------------
+#linear touch model
 #---------------------------------------------
 def LinearModel(data):
     """
@@ -192,11 +313,8 @@ def LRmodel(data):
 
     return(medium_contribution)
     
-
-
-
 #---------------------------------------------
-#logistic regression model
+#transform data set to matrix format before using the data in logistic regression model
 #---------------------------------------------
 def TransformDataToLRmodel(data):
     """

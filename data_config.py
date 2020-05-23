@@ -37,7 +37,7 @@ def data_out1(data_conversion, data_non_conversion, user_conversion):
 
 def data_in_r():
     path = r'C:\Users\sesig\Documents\master data science\tfm\r_dataset_cleaned\r_dataset_timestamp.csv'
-    data = pd.read_csv(path, sep=',',nrows=1000)
+    data = pd.read_csv(path, sep=',')
 
     path_lr = r'C:\Users\sesig\Documents\master data science\tfm\r_dataset_cleaned\data_for_lr.csv'
     data_lr = pd.read_csv(path_lr,sep=',')
