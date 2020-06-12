@@ -39,10 +39,34 @@ def data_in_r():
     path = r'C:\Users\sesig\Documents\master data science\tfm\r_dataset_cleaned\r_dataset_timestamp.csv'
     data = pd.read_csv(path, sep=',')
 
-    path_lr = r'C:\Users\sesig\Documents\master data science\tfm\r_dataset_cleaned\data_for_lr.csv'
+    path_lr = r'C:\Users\sesig\Documents\master data science\tfm\r_dataset_cleaned\data_for_lr_1u.csv'
     data_lr = pd.read_csv(path_lr,sep=',')
 
-    return data, data_lr
+    path_1u = r'C:\Users\sesig\Documents\master data science\tfm\r_dataset_cleaned\data_all_1u.csv'
+    data_1u = pd.read_csv(path_1u,sep=',')
+
+    return data, data_lr, data_1u
+
+def data_in_r2():
+    path = r'C:\Users\sesig\Documents\master data science\tfm\r_dataset_cleaned\r_dataset_timestamp.csv'
+    data = pd.read_csv(path, sep=',')
+
+    path_cleaned = r'C:\Users\sesig\Documents\master data science\tfm\r_dataset_cleaned\r_dataset_cleaned_map.csv'
+    data_cleaned = pd.read_csv(path_cleaned,sep=',')
+
+    return data, data_cleaned
+
+def contribution_in():
+    path = r'C:\Users\sesig\Documents\master data science\tfm\results\contribution_simple_models.csv'
+    x = pd.read_csv(path, sep=',')
+
+    return(x)
+
+def contribution_1u_in():
+    path = r'C:\Users\sesig\Documents\master data science\tfm\results\contribution_models_1u.csv'
+    x = pd.read_csv(path, sep=',')
+
+    return(x)
 
 #only runs the code if executed as main
 if __name__== '__main__':
