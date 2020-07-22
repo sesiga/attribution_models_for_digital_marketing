@@ -13,9 +13,9 @@ import numpy as np
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import confusion_matrix
+import matplotlib
 import matplotlib.pyplot as plt
 from matplotlib import rc
-import matplotlib
 
 #---------------------------------------------
 #probabilistic model
@@ -50,7 +50,7 @@ def prob_mod(data):
     user_id_new = ''
     user_id_old = ''
     for i in range(data_shape[0]):
-        user_id_new = data.iloc[i,0] 
+        user_id_new = data.iloc[i,0]
         if user_id_new == user_id_old:
             if data.iloc[i,2]:
                 medium_p_aux[medium_map[data.iloc[i,1]]] = 1.
@@ -75,7 +75,7 @@ def prob_mod(data):
         medium_contribution.iloc[i,1] =  medium_p[i,i]+(np.sum(medium_p[i,:])-medium_p_diag_sum-(n_medium-1)*medium_p[i,i])/(2.*(n_medium-1))
 
     medium_contribution.iloc[:,1] /= np.sum(medium_contribution.iloc[:,1])
-    
+
     return(medium_contribution)
 
 #---------------------------------------------
@@ -178,8 +178,8 @@ def PositionBasedModel(data):
     for name, group in data_grouped:
         if group.iloc[0,2] == 1:
             n_ads = group.shape[0]
-            medium_aux[group.iloc[0,1]] += 0.4 
-            medium_aux[group.iloc[n_ads-1,1]] += 0.4 
+            medium_aux[group.iloc[0,1]] += 0.4
+            medium_aux[group.iloc[n_ads-1,1]] += 0.4
             for i in range(1,n_ads-1):
                 medium_aux[group.iloc[i,1]] += 0.2 / ( n_ads - 2 )
             for i in medium_aux:
@@ -342,10 +342,11 @@ def LRmodel(data):
     ch = np.arange(0,12,1,dtype=np.int_)
     d = {'medium':ch, 'contribution':np.zeros(12,dtype=np.float_)}
     medium_contribution = pd.DataFrame(data=d)
-    
+
     x_train, x_test, y_train, y_test = train_test_split(data.iloc[:,1:13].values, data['conversion'], \
         test_size=test_size, random_state=1, stratify=data['conversion'])
-    lr = LogisticRegression(penalty='l2', C=0.1,  fit_intercept=False, solver='lbfgs')
+    lr = LogisticRegression(penalty='l2', C=0.001,  fit_intercept=False, solver='lbfgs')
+    #c=0.1,1000
     lr.fit(x_train, y_train)
     y_pred = lr.predict(x_test)
     beta = lr.coef_
@@ -361,18 +362,30 @@ def LRmodel(data):
                 y_pred2[i] = 0
 
     for i in range(len(medium_contribution)):
+    # for i in range(6):
         medium_contribution.loc[i,'contribution'] = beta[0,i]
-    # medium_max = max(medium_contribution.iloc[:,1])
-    # medium_min = min(medium_contribution.iloc[:,1])
-    medium_max = 1
-    medium_min = -1
+    # medium_max = max(beta[0,:6]) + 0.01
+    # medium_min = min(beta[0,:6]) - 0.01
+    medium_max = max(beta[0,:]) + 0.01
+    medium_min = min(beta[0,:]) - 0.01
 
     print(medium_contribution)
 
     for i in range(len(medium_contribution)):
-        medium_contribution.iloc[i,1] = ( medium_contribution.iloc[i,1] - medium_min ) / ( medium_max - medium_min )
+    # for i in range(6):
+        medium_contribution.loc[i,'contribution'] = np.exp(beta[0,i]) / ( 1 + np.exp(beta[0,i]) )
+    # medium_max = max(beta[0,:6]) + 0.01
+    # medium_min = min(beta[0,:6]) - 0.01
+    medium_max = max(beta[0,:]) + 0.01
+    medium_min = min(beta[0,:]) - 0.01
 
     print(medium_contribution)
+
+    # for i in range(len(medium_contribution)):
+    # # for i in range(6):
+    #     medium_contribution.iloc[i,1] = ( medium_contribution.iloc[i,1] - medium_min ) / ( medium_max - medium_min )
+
+    # print(medium_contribution)
 
     medium_sum = np.sum(medium_contribution.iloc[:,1])
     for i in range(len(medium_contribution)):
@@ -513,7 +526,7 @@ def TransformDataToLRmodel_NoRepetition(data_all, data_agr):
     data_agr_nrow = len(data_agr)
     data_all_1u = pd.DataFrame(data={'uid':data_agr.iloc[:,0], 'campaign':np.zeros(data_agr_nrow, dtype=np.int_), \
         'conversion':np.zeros(data_agr_nrow, dtype=np.int_), 'timestamp':np.zeros(data_agr_nrow, dtype=np.int_)})
-    
+
     k = 0
     m = 0
     j = 0
@@ -583,7 +596,181 @@ def TimeDecayModel(data):
                 medium_contribution.iloc[medium_loc,1] += medium_aux[i] / max(medium_count[i],1)
                 medium_aux[i] = 0
                 medium_count[i] = 0
-    medium_contribution.iloc[:,1] /= np.sum(medium_contribution.iloc[:,1])   
+    medium_contribution.iloc[:,1] /= np.sum(medium_contribution.iloc[:,1])
+
+    return(medium_contribution)
+
+#---------------------------------------------
+#time decay model
+#---------------------------------------------
+def SurvivalModel():
+    """
+    input
+        data: input dataframe with four columns:
+            user_id, medium (ie. channel, line item), conversion or not of each user, timestamp
+
+    output
+        medium_contribution: dataframe with two columns:
+            medium, contribution
+    """
+
+    path = r'C:\Users\sesig\Documents\master data science\tfm\r_dataset_cleaned\data_all_1u.csv'
+    data = pd.read_csv(filepath_or_buffer=path, sep=',')
+    path_tconv = r'C:\Users\sesig\Documents\master data science\tfm\r_dataset_cleaned\r_dataset_tconv.csv'
+    tconv = pd.read_csv(filepath_or_buffer=path_tconv, sep=',')
+
+    beta = np.ones(12,dtype=np.float_)
+    omega = np.ones(12,dtype=np.float_)
+    beta_omega = np.ones(12,dtype=np.float_)
+    nrep = 20
+    beta_all = np.zeros((nrep,12),dtype=np.float_)
+    omega_all = np.zeros((nrep,12),dtype=np.float_)
+
+    adhazard = pd.DataFrame.copy(data)
+    adhazard['p'] = np.zeros(len(adhazard),dtype=np.float_)
+    adhazard['p_sum'] = np.zeros(len(adhazard),dtype=np.float_)
+    adhazard['beta_den'] = np.zeros(len(adhazard),dtype=np.float_)
+    adhazard['omega_den'] = np.zeros(len(adhazard),dtype=np.float_)
+
+    data_grouped = pd.DataFrame.groupby(data, by='uid')
+
+    for n in range(nrep):
+        # count = 0
+        for user, group in data_grouped:
+            # count +=1
+            # if count > 100:
+            #     break
+            index = group.index
+            #if conversion p!=0
+            if group.loc[index[0],'conversion'] == 1:
+                suma = 0
+                for i in index:
+                    #which channel
+                    ch = group.loc[i,'campaign']
+
+                    #p
+                    deltat = tconv.iloc[user,1] - group.loc[i,'timestamp']
+                    adhazard.loc[i,'p'] = beta_omega[ch] * np.exp( - omega[ch] * deltat )
+                    suma += adhazard.loc[i,'p']
+                    adhazard.loc[i,'p_sum'] = suma
+
+                    #beta denominator
+                    adhazard.loc[i,'beta_den'] = 1. - np.exp( - omega[ch] * deltat )
+
+                for i in index:
+                    #which channel
+                    ch = group.loc[i,'campaign']
+
+                    #p
+                    deltat = tconv.iloc[user,1] - group.loc[i,'timestamp']
+                    adhazard.loc[i,'p'] /= suma
+
+                    #omega denominator
+                    adhazard.loc[i,'omega_den'] = adhazard.loc[i,'p'] * deltat + beta[ch] * deltat * np.exp( - omega[ch] * deltat )
+
+            else:
+
+                for i in index:
+                    #which channel
+                    ch = group.loc[i,'campaign']
+
+                    #beta denominator
+                    deltat = tconv.iloc[user,1] - group.loc[i,'timestamp']
+                    adhazard.loc[i,'beta_den'] = 1. - np.exp( - omega[ch] * deltat )
+
+                    #omega denominator
+                    adhazard.loc[i,'omega_den'] = beta[ch] * deltat * np.exp( - omega[ch] * deltat )
+
+        #update omega and beta
+        data_grouped_ch = pd.DataFrame.groupby(adhazard, by='campaign')
+        for ch, ch_group in data_grouped_ch:
+            beta_den = ch_group['beta_den'].sum()
+            if beta_den > 1e-6:
+                beta[ch] = ch_group['p'].sum() / beta_den
+            beta_all[n,ch] = beta[ch]
+            omega_den = ch_group['omega_den'].sum()
+            if omega_den > 1e-6:
+                omega[ch] = ch_group['p'].sum() / omega_den
+            omega_all[n,ch] = omega[ch]
+            beta_omega[ch] = beta[ch] * omega[ch]
+
+        print(n)
+
+    betadf = pd.DataFrame(data=beta_all)
+    omegadf = pd.DataFrame(data=omega_all)
+
+    path_beta = r'C:\Users\sesig\Documents\master data science\tfm\r_dataset_cleaned\ad_hazard_beta.csv'
+    pd.DataFrame.to_csv(betadf,path_or_buf=path_beta,sep=',',index=False)
+    path_omega = r'C:\Users\sesig\Documents\master data science\tfm\r_dataset_cleaned\ad_hazard_omega.csv'
+    pd.DataFrame.to_csv(omegadf,path_or_buf=path_omega,sep=',',index=False)
+
+def SurvivalModelCont():
+    """
+    input
+        data: input dataframe with four columns:
+            user_id, medium (ie. channel, line item), conversion or not of each user, timestamp
+
+    output
+        medium_contribution: dataframe with two columns:
+            medium, contribution
+    """
+
+    path = r'C:\Users\sesig\Documents\master data science\tfm\r_dataset_cleaned\data_all_1u.csv'
+    data = pd.read_csv(filepath_or_buffer=path, sep=',')
+    path_tconv = r'C:\Users\sesig\Documents\master data science\tfm\r_dataset_cleaned\r_dataset_tconv.csv'
+    tconv = pd.read_csv(filepath_or_buffer=path_tconv, sep=',')
+
+    medium_unique = pd.Series.unique(data.iloc[:,1])
+    n_medium = len(medium_unique)
+    medium_map = {}
+    medium_aux = {}
+    medium_count = {}
+    j = 0
+    for i in medium_unique:
+        medium_map[i] = j
+        medium_aux[i] = 0
+        medium_count[i] = 0
+        j += 1
+
+    d = {'medium':medium_unique,'contribution':np.zeros(n_medium,dtype=np.float_)}
+    medium_contribution = pd.DataFrame(data=d)
+
+    path_beta = r'C:\Users\sesig\Documents\master data science\tfm\r_dataset_cleaned\ad_hazard_beta.csv'
+    betadf = pd.read_csv(filepath_or_buffer=path_beta, sep=',')
+    path_omega = r'C:\Users\sesig\Documents\master data science\tfm\r_dataset_cleaned\ad_hazard_omega.csv'
+    omegadf = pd.read_csv(filepath_or_buffer=path_omega, sep=',')
+
+    beta = betadf.iloc[-1,:]
+    omega = omegadf.iloc[-1,:]
+
+    data_grouped = pd.DataFrame.groupby(data, by='uid')
+    for user, group in data_grouped:
+        index = group.index
+        if group.loc[index[0],'conversion'] == 1:
+            suma = 0
+            p = np.zeros(len(index),dtype=np.float_)
+            j = 0
+            for i in index:
+                #which channel
+                ch = group.loc[i,'campaign']
+
+                #p
+                deltat = tconv.iloc[user,1] - group.loc[i,'timestamp']
+                p[j] = beta[ch] * omega[ch] * np.exp( - omega[ch] * deltat )
+                suma += p[j]
+                j += 1
+            j = 0
+            for i in index:
+                #chich channel
+                ch = group.loc[i,'campaign']
+
+                p[j] /= suma
+
+                medium_contribution.iloc[ch,1] += p[j]
+
+                j += 1
+
+    medium_contribution.iloc[:,1] /= np.sum(medium_contribution.iloc[:,1])
 
     return(medium_contribution)
 
@@ -601,16 +788,16 @@ def contribution(x,select):
     x_loc = np.arange(n_ch)
     width = 0.1
 
-    models1 = ['last', 'linear', 'first']
-    models2 = ['bathtub', 'pos_decay', 'linear_same']
+    models1 = ['last', 'linear', 'time_decay']
+    models2 = ['prob', 'lr', 'ad_hazard']
 
-    labels1 = ['Last', 'Linear (prop)', 'First']
-    labels2 = ['Bathtub', 'Pos. Decay', 'Linear (same)']
+    labels1 = ['Last', 'Linear (prop)', 'Time Decay']
+    labels2 = ['Probabilistic', 'L. Regression', 'Additive Hazard']
 
     #channels 1 to 6
     if select == 0:
 
-        # ch0_1 = x.iloc[0,2:5] 
+        # ch0_1 = x.iloc[0,2:5]
         # ch0_2 = x.iloc[0,8:]
         ch0_1 = x.loc[0,models1]
         ch0_2 = x.loc[0,models2]
@@ -640,10 +827,10 @@ def contribution(x,select):
         # ch5_2 = x.iloc[5,8:]
         ch5_1 = x.loc[5,models1]
         ch5_2 = x.loc[5,models2]
-    
+
     #channels 7 to 12
     elif select == 1:
-        # ch0_1 = x.iloc[6,2:5] 
+        # ch0_1 = x.iloc[6,2:5]
         # ch0_2 = x.iloc[6,7:]
         ch0_1 = x.loc[0,models1]
         ch0_2 = x.loc[0,models2]
@@ -702,6 +889,131 @@ def contribution(x,select):
     # ax[1].legend()
     # fig.legend()
     plt.show()
+
+    # matplotlib.use("pgf")
+    # matplotlib.rcParams.update({
+    #     "pgf.texsystem": "pdflatex",
+    #     'font.family': 'serif',
+    #     'text.usetex': True,
+    #     'pgf.rcfonts': False,
+    # })
+    plt.rcParams.update({
+        "pgf.texsystem": "pdflatex",
+        'text.usetex': True
+    })
+
+    # plt.savefig(r'C:\Users\sesig\Documents\master data science\tfm\project\imagenes\datadriven_ch_cont.pgf')
+
+#---------------------------------------------
+#plot contribution of the channel for each model
+#---------------------------------------------
+def contribution2(x,select):
+    """
+    input
+        x: dataframe
+            each row is a channel and each column its contribution to the model
+    """
+
+    n_ch = 6
+    x_loc = np.arange(n_ch)
+    width = 0.1
+
+    models1 = ['last', 'linear', 'first']
+    models2 = ['bathtub', 'linear_same', 'pos_decay']
+
+    labels1 = ['Ch 0', 'Ch 1', 'Ch 2', 'Ch 3', 'Ch 4', 'Ch 5', 'Ch 6']
+
+    #channels 1 to 6
+    if select == 0:
+
+        ch0_1 = x.loc[0:5,'last']
+        label0 = 'Last'
+
+        ch1_1 = x.loc[0:5,'linear']
+        label1 = 'Linear (prop)'
+
+        # ch2_1 = x.loc[0:5,'first']
+        # label2 = 'First'
+        ch2_1 = x.loc[0:5,'time_decay']
+        label2 = 'Time Decay'
+
+        # ch3_1 = x.loc[0:5,'bathtub']
+        # label3 = 'Bathtub'
+        ch3_1 = x.loc[0:5,'prob']
+        label3 = 'Probabilistic'
+
+        # ch4_1 = x.loc[0:5,'pos_decay']
+        # label4 = 'Pos. Decay'
+        ch4_1 = x.loc[0:5,'lr3']
+        label4 = 'L. Regression'
+
+        # ch5_1 = x.loc[0:5,'linear_same']
+        # label5 = 'Linear (same)'
+        ch5_1 = x.loc[0:5,'ad_hazard']
+        label5 = 'Ad. Hazard'
+
+    #channels 7 to 12
+    elif select == 1:
+        # ch0_1 = x.iloc[6,2:5]
+        # ch0_2 = x.iloc[6,7:]
+        ch0_1 = x.loc[0,models1]
+        ch0_2 = x.loc[0,models2]
+
+        # ch1_1 = x.iloc[7,2:5]
+        # ch1_2 = x.iloc[7,7:]
+        ch1_1 = x.loc[1,models1]
+        ch1_2 = x.loc[1,models2]
+
+        # ch2_1 = x.iloc[8,2:5]
+        # ch2_2 = x.iloc[8,7:]
+        ch2_1 = x.loc[2,models1]
+        ch2_2 = x.loc[2,models2]
+
+        # ch3_1 = x.iloc[9,2:5]
+        # ch3_2 = x.iloc[9,7:]
+        ch3_1 = x.loc[3,models1]
+        ch3_2 = x.loc[3,models2]
+
+        # ch4_1 = x.iloc[10,2:5]
+        # ch4_2 = x.iloc[10,7:]
+        ch4_1 = x.loc[4,models1]
+        ch4_2 = x.loc[4,models2]
+
+        # ch5_1 = x.iloc[11,2:5]
+        # ch5_2 = x.iloc[11,7:]
+        ch5_1 = x.loc[5,models1]
+        ch5_2 = x.loc[5,models2]
+    else:
+        return('invalid number. 0 for first 6 channels. 1 for rest of channels')
+
+    fig, ax = plt.subplots(constrained_layout=True, figsize=(5.9055,3))
+    
+    ax.bar(x_loc - (width / 2 + 2 * width), ch0_1, width=width, label=label0)
+    ax.bar(x_loc - (width / 2 + 1 * width), ch1_1, width=width, label=label1)
+    ax.bar(x_loc - (width / 2 + 0 * width), ch2_1, width=width, label=label2)
+    ax.bar(x_loc + (width / 2 + 0 * width), ch3_1, width=width, label=label3)
+    ax.bar(x_loc + (width / 2 + 1 * width), ch4_1, width=width, label=label4)
+    ax.bar(x_loc + (width / 2 + 2 * width), ch5_1, width=width, label=label5)
+
+    ax.set_xticks(x_loc)
+
+    ax.set_ylim([0,0.5])
+
+    # ax.set_yscale('log')
+
+    ax.set_xticklabels(labels1)
+
+    ax.legend(loc='best',fancybox=False, shadow=False, ncol=1)
+
+    # plt.show()
+
+    plt.rcParams.update({
+        "pgf.texsystem": "pdflatex",
+        'text.usetex': True
+    })
+
+    plt.savefig(r'C:\Users\sesig\Documents\master data science\tfm\project\imagenes\datadriven_ch_cont.pgf')
+    # plt.savefig(r'C:\Users\sesig\Documents\master data science\tfm\project\imagenes\simple_ch_cont.pgf')
 
 #---------------------------------------------
 #only runs the code if executed as main

@@ -15,6 +15,7 @@ import statsmodels.api as sm
 import matplotlib.pyplot as plt
 from matplotlib import rc
 import matplotlib
+from seaborn import distplot
 
 #----------------------------------
 #load data
@@ -61,7 +62,16 @@ def channel_ads_interarrival_times(data, group):
 
     return(x1)
 
-def channel_ads_interarrival_individual_times(data, group):
+def channel_ads_interarrival_individual_times():
+
+    path1 = r'C:\Users\sesig\Documents\master data science\tfm\criteo_cleaned_data\data_user_conversion.tsv.gz'
+    data1 = pd.read_csv(path1, usecols=['timestamp','campaign','uid'], sep='\t', compression='gzip')
+    path2 = r'C:\Users\sesig\Documents\master data science\tfm\criteo_cleaned_data\data_user_non_conversion.tsv.gz'
+    data2 = pd.read_csv(path2, usecols=['timestamp','campaign','uid'], sep='\t', compression='gzip')
+    data = pd.concat([data1, data2])
+
+    group = 5061834
+
     channel = data.groupby(['campaign'],sort=False).get_group(group)
     channel_uid = channel.groupby(['uid'])
     x = pd.DataFrame(columns=['time1', 'time2', 'time3'])
@@ -87,9 +97,15 @@ def channel_ads_interarrival_individual_times(data, group):
     ax[2].hist(x['time3'], bins=8, range=(0,10))
     ax[2].set_xlabel('Time from $3^{rd}$ ad to $4^{th}$ ad')
     ax[2].set_ylabel('Number of ads')
-    fig.suptitle('Criteo channel: 32368244')
+    fig.suptitle('Criteo channel: 5061834')
     # plt.show()
-    fig.savefig(r"C:\Users\sesig\Documents\master data science\tfm\project\imagenes\interarrival_times_channel_32368244.png", format="png")
+    # fig.savefig(r"C:\Users\sesig\Documents\master data science\tfm\project\imagenes\interarrival_times_channel_32368244.png", format="png")
+
+    plt.rcParams.update({
+        "pgf.texsystem": "pdflatex",
+        'text.usetex': True
+    })
+    plt.savefig(r'C:\Users\sesig\Documents\master data science\tfm\project\imagenes\interarrival_times_channel_5061834.pgf')
 
 def ks_test_gamma_individual_interarrival_times(data, ch):
     channel = data.groupby(['campaign'],sort=False).get_group(ch)
@@ -191,7 +207,14 @@ def fit_gamma_dist(data):
     path = r'C:\Users\sesig\Documents\master data science\tfm\criteo_cleaned_data\gamma_dist_params.csv'
     pd.DataFrame.to_csv(df,path_or_buf=path,sep=',',index=False)
 
-def plot_interarrival_times(data):
+def plot_interarrival_times():
+
+    path1 = r'C:\Users\sesig\Documents\master data science\tfm\criteo_cleaned_data\data_user_conversion.tsv.gz'
+    data1 = pd.read_csv(path1, usecols=['timestamp','campaign','uid'], sep='\t', compression='gzip')
+    path2 = r'C:\Users\sesig\Documents\master data science\tfm\criteo_cleaned_data\data_user_non_conversion.tsv.gz'
+    data2 = pd.read_csv(path2, usecols=['timestamp','campaign','uid'], sep='\t', compression='gzip')
+    data = pd.concat([data1, data2])
+
     fig, ax = plt.subplots(nrows=1, ncols=3, constrained_layout=True, figsize=(5.9055,3))
     ax[0].hist(channel_ads_interarrival_times(data,5061834), bins=10, range=(0,10))
     ax[0].set_title('Channel 5061834')
@@ -206,7 +229,50 @@ def plot_interarrival_times(data):
     ax[2].set_xlabel('Interarrival time (days)')
     ax[2].set_ylabel('Number of ads')
     # plt.show()
-    fig.savefig(r"C:\Users\sesig\Documents\master data science\tfm\project\imagenes\histogram_ads_time_distribution.png", format="png")
+    # fig.savefig(r"C:\Users\sesig\Documents\master data science\tfm\project\imagenes\histogram_ads_time_distribution.png", format="png")
+
+    plt.rcParams.update({
+        "pgf.texsystem": "pdflatex",
+        'text.usetex': True
+    })
+    plt.savefig(r'C:\Users\sesig\Documents\master data science\tfm\project\imagenes\histogram_ads_time_distribution.pgf')
+
+def plot_density_interarrival_times():
+
+    path1 = r'C:\Users\sesig\Documents\master data science\tfm\criteo_cleaned_data\data_user_conversion.tsv.gz'
+    data1 = pd.read_csv(path1, usecols=['timestamp','campaign','uid'], sep='\t', compression='gzip')
+    path2 = r'C:\Users\sesig\Documents\master data science\tfm\criteo_cleaned_data\data_user_non_conversion.tsv.gz'
+    data2 = pd.read_csv(path2, usecols=['timestamp','campaign','uid'], sep='\t', compression='gzip')
+    data = pd.concat([data1, data2])
+
+    fig, ax = plt.subplots(nrows=1, ncols=3, constrained_layout=True, figsize=(5.9055,3))
+    distplot(channel_ads_interarrival_times(data,5061834), hist=False, kde=True, ax=ax[0], fit=stats.gamma)
+    ax[0].set_title('Channel 5061834')
+    ax[0].set_xlabel('Interarrival time (days)')
+    ax[0].set_ylabel('Density')
+    ax[0].set_ylim([0,0.5])
+    ax[0].set_xlim([0,10])
+    distplot(channel_ads_interarrival_times(data,9100690), hist=False, kde=True, ax=ax[1], fit=stats.gamma)
+    ax[1].set_title('Channel 9100690')
+    ax[1].set_xlabel('Interarrival time (days)')
+    ax[1].set_ylabel('Density')
+    ax[1].set_ylim([0,0.5])
+    ax[1].set_xlim([0,10])
+    distplot(channel_ads_interarrival_times(data,32368244), hist=False, kde=True, ax=ax[2], fit=stats.gamma)
+    ax[2].set_title('Channel 32368244')
+    ax[2].set_xlabel('Interarrival time (days)')
+    ax[2].set_ylabel('Density')
+    ax[2].set_ylim([0,0.5])
+    ax[2].set_xlim([0,10])
+    # plt.show()
+    # fig.savefig(r"C:\Users\sesig\Documents\master data science\tfm\project\imagenes\histogram_ads_time_distribution.png", format="png")
+
+    plt.rcParams.update({
+        "pgf.texsystem": "pdflatex",
+        'text.usetex': True
+    })
+    plt.savefig(r'C:\Users\sesig\Documents\master data science\tfm\project\imagenes\density_ads_time_distribution.pgf')
+
 
 def channel_ads_distribution(data,channels):
     channel = pd.read_csv(r'C:\Users\sesig\Documents\master data science\tfm\criteo_cleaned_data\channel_appereances.csv',sep=',',usecols=['campaign'],nrows=50)

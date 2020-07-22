@@ -135,6 +135,33 @@ def generate_ad_timestamp(data_criteo):
 
     return(print('---generate_ad_timestamp---'))
     
+def generate_conv_timestamp():
+    #add timestamp of conversion for each user
+    path = r'C:\Users\sesig\Documents\master data science\tfm\r_dataset_cleaned\data_all_1u.csv'
+    data = pd.read_csv(filepath_or_buffer=path, sep=',')
+    data_grouped = pd.groupby(data, by='uid')
+    nuser = pd.Series.nunique(data['uid'])
+    x = pd.DataFrame(data={'uid':np.arange(nuser,dtype=np.int_), 'tconv':np.zeros(nuser,dtype=np.float_)})
+
+    path_params = r'C:\Users\sesig\Documents\master data science\tfm\criteo_cleaned_data\gamma_dist_params.csv'
+    channel_params = pd.read_csv(filepath_or_buffer=path_params, sep=',')
+
+    i = 0
+    for name, group in data_grouped:
+        if group.iloc[0,2] == 1:
+            ch = group.iloc[-1,1]
+            a = channel_params.loc[ch,'shape parameter']
+            loc = channel_params.loc[ch,'location parameter']
+            scale = channel_params.loc[ch,'scale parameter']
+            x.loc[i,'tconv'] = group.iloc[-1,3] + stats.gamma.rvs(a, loc=loc, scale=scale, size=1, random_state=i)
+            i += 1
+        else:
+            x.loc[i,'tconv'] = group.iloc[-1,3] + 15
+            i += 1
+
+    path_out = r'C:\Users\sesig\Documents\master data science\tfm\r_dataset_cleaned\r_dataset_tconv.csv'
+    pd.DataFrame.to_csv(x,path_or_buf=path_out,sep=',',index=False)
+
 #---------------------------------------------
 #creates pandas dataframe from the original data
 #---------------------------------------------

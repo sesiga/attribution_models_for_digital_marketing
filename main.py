@@ -17,8 +17,9 @@ import data_processing_rpackage
 import data_config
 from scipy import stats
 import statsmodels.api as sm
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
 import models
+
 
 
 #---------------------------------------------
@@ -48,8 +49,8 @@ def main(data,data_lr,data_1u):
 
     # linear_same_results = models.LinearModelSame(data.loc[:,['uid', 'campaign', 'conversion']])
     # print(linear_same_results)
-    linear_same_results = models.LinearModelSame(data_1u.loc[:,['uid', 'campaign', 'conversion']])
-    print(linear_same_results)
+    # linear_same_results = models.LinearModelSame(data_1u.loc[:,['uid', 'campaign', 'conversion']])
+    # print(linear_same_results)
 
     # lr_optC = models.LRmodel(data_lr)
 
@@ -78,6 +79,10 @@ def main(data,data_lr,data_1u):
     # time_decay_results = models.TimeDecayModel(data_1u.loc[:,['uid', 'campaign', 'conversion', 'timestamp']])
     # print(time_decay_results)
 
+    # models.SurvivalModel()
+    # adhazard_results = models.SurvivalModelCont()
+    # print(adhazard_results)
+
     # medium_contribution['prob'] = prob_results['contribution']
     # medium_contribution['last'] = last_results['contribution']
     # medium_contribution['linear'] = linear_results['contribution']
@@ -91,11 +96,18 @@ def main(data,data_lr,data_1u):
     # path_contribution_out = r'C:\Users\sesig\Documents\master data science\tfm\results\contribution_models_1u.csv'
     # pd.DataFrame.to_csv(medium_contribution,path_or_buf=path_contribution_out,sep=',',index=False)
 
+    # data_processing_rpackage.generate_conv_timestamp()
+
     # x = data_config.contribution_in()
     # models.contribution(x,0)
 
     # x = data_config.contribution_1u_in()
     # models.contribution(x,0)
+    # models.contribution2(x,0)
+
+    # data_processing.plot_interarrival_times()
+    data_processing.plot_density_interarrival_times()
+    # data_processing.channel_ads_interarrival_individual_times()
 
     # models.TransformDataToLRmodel_NoRepetition(data_all, data_agr)
     # models.TransformDataToLRmodel(data)
